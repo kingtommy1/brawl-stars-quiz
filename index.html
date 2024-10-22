@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brawl Stars Quiz</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #6157ff, #ee49fd);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .welcome-screen {
+            text-align: center;
+        }
+
+        .welcome-screen h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 30px;
+        }
+
+        .question-screen {
+            display: none;
+        }
+
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .question-text {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .options {
+            display: grid;
+            gap: 10px;
+        }
+
+        .option {
+            padding: 15px;
+            border: 2px solid #6157ff;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .option:hover {
+            background: #6157ff;
+            color: white;
+        }
+
+        .selected {
+            background: #6157ff;
+            color: white;
+        }
+
+        .correct {
+            background: #4CAF50;
+            color: white;
+            border-color: #4CAF50;
+        }
+
+        .wrong {
+            background: #f44336;
+            color: white;
+            border-color: #f44336;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            background: #6157ff;
+            color: white;
+            cursor: pointer;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            background: #4a41d9;
+        }
+
+        .btn:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .navigation-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+
+        .result-screen {
+            display: none;
+            text-align: center;
+        }
+
+        .result-screen h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .score-details {
+            margin: 20px 0;
+            font-size: 1.1em;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Karşılama Ekranı -->
+        <div class="welcome-screen">
+            <h1>Brawl Stars Quiz</h1>
+            <button class="btn" onclick="startQuiz()">Quiz'e Başla</button>
+        </div>
+
+        <!-- Soru Ekranı -->
+        <div class="question-screen">
+            <div class="question-header">
+                <span>Soru <span id="currentQuestion">1</span>/10</span>
+                <span>Puan: 10</span>
+            </div>
+            <div class="question-text" id="questionText"></div>
+            <div class="options" id="options"></div>
+            <div class="navigation-buttons">
+                <button class="btn" onclick="previousQuestion()" id="prevBtn">Önceki Soru</button>
+                <button class="btn" onclick="showFinishConfirmation()" id="finishBtn" style="display: none;">Quiz'i Bitir</button>
+            </div>
+        </div>
+
+        <!-- Sonuç Ekranı -->
+        <div class="result-screen">
+            <h2>Quiz Tamamlandı!</h2>
+            <div class="score-details">
+                <p>Toplam Puan: <span id="totalScore">0</span></p>
+                <p>Doğru Sayısı: <span id="correctAnswers">0</span></p>
+                <p>Yanlış Sayısı: <span id="wrongAnswers">0</span></p>
+            </div>
+            <button class="btn" onclick="restartQuiz()">Tekrar Başla</button>
+        </div>
+    </div>
+
+    <!-- Quiz Bitirme Onay Modalı -->
+    <div class="modal" id="finishModal">
+        <div class="modal-content">
+            <h3>Quiz'i bitirmek istediğinize emin misiniz?</h3>
+            <div class="modal-buttons">
+                <button class="btn" onclick="hideFinishConfirmation()">Hayır</button>
+                <button class="btn" onclick="finishQuiz()">Eminim</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const questions = [
+            {
+                question: "Brawl Stars'ta hangi brawler süper nadir kategorisindedir?",
+                options: ["Carl", "Rico", "Penny", "El Primo"],
+                correct: 0
+            },
+            {
+                question: "Spike hangi kategorideki bir brawler'dır?",
+                options: ["Efsanevi", "Mitik", "Süper Nadir", "Nadir"],
+                correct: 0
+            },
+            {
+                question: "Hangi brawler zehir saldırısı yapabilir?",
+                options: ["Crow", "Leon", "Sandy", "Amber"],
+                correct: 0
+            },
+            {
+                question: "Brawl Stars'ta bir maçta maksimum kaç power cube toplanabilir?",
+                options: ["35", "40", "45", "50"],
+                correct: 1
+            },
+            {
+                question: "Hangisi bir Brawl Stars oyun modudur?",
+                options: ["Gem Grab", "Crystal Collect", "Diamond Rush", "Ruby Race"],
+                correct: 0
+            },
+            {
+                question: "Hangi brawler duvarların arkasından vuramaz?",
+                options: ["Bull", "Brock", "Dynamike", "Barley"],
+                correct: 0
+            },
+            {
+                question: "Brawl Stars'ta bir sezon kaç gün sürer?",
+                options: ["60", "70", "80", "90"],
+                correct: 1
+            },
+            {
+                question: "Hangi brawler kendini görünmez yapabilir?",
+                options: ["Leon", "Sandy", "Crow", "Max"],
+                correct: 0
+            },
+            {
+                question: "Brawl Pass'in maksimum tier seviyesi nedir?",
+                options: ["60", "70", "80", "90"],
+                correct: 1
+            },
+            {
+                question: "Bir brawler'ın maksimum güç seviyesi nedir?",
+                options: ["9", "10", "11", "12"],
+                correct: 2
+            }
+        ];
+
+        let currentQuestionIndex = 0;
+        let answers = new Array(questions.length).fill(null);
+        
+        function startQuiz() {
+            document.querySelector('.welcome-screen').style.display = 'none';
+            document.querySelector('.question-screen').style.display = 'block';
+            showQuestion();
+        }
+
+        function showQuestion() {
+            const question = questions[currentQuestionIndex];
+            document.getElementById('currentQuestion').textContent = currentQuestionIndex + 1;
+            document.getElementById('questionText').textContent = question.question;
+            
+            const optionsContainer = document.getElementById('options');
+            optionsContainer.innerHTML = '';
+            
+            question.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.className = 'option';
+                if (answers[currentQuestionIndex] === index) {
+                    button.classList.add('selected');
+                }
+                button.textContent = `${String.fromCharCode(65 + index)}. ${option}`;
+                button.onclick = () => selectOption(index);
+                optionsContainer.appendChild(button);
+            });
+
+            updateNavigationButtons();
+        }
+
+        function selectOption(index) {
+            answers[currentQuestionIndex] = index;
+            document.querySelectorAll('.option').forEach(option => option.classList.remove('selected'));
+            document.querySelectorAll('.option')[index].classList.add('selected');
+            
+            if (currentQuestionIndex < questions.length - 1) {
+                setTimeout(() => {
+                    currentQuestionIndex++;
+                    showQuestion();
+                }, 500);
+            } else {
+                document.getElementById('finishBtn').style.display = 'block';
+            }
+        }
+
+        function previousQuestion() {
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                showQuestion();
+            }
+        }
+
+        function updateNavigationButtons() {
+            const prevBtn = document.getElementById('prevBtn');
+            prevBtn.disabled = currentQuestionIndex === 0;
+        }
+
+        function showFinishConfirmation() {
+            document.getElementById('finishModal').style.display = 'flex';
+        }
+
+        function hideFinishConfirmation() {
+            document.getElementById('finishModal').style.display = 'none';
+        }
+
+        function finishQuiz() {
+            hideFinishConfirmation();
+            
+            let correctCount = 0;
+            answers.forEach((answer, index) => {
+                if (answer === questions[index].correct) {
+                    correctCount++;
+                }
+            });
+
+            document.getElementById('totalScore').textContent = correctCount * 10;
+            document.getElementById('correctAnswers').textContent = correctCount;
+            document.getElementById('wrongAnswers').textContent = questions.length - correctCount;
+
+            document.querySelector('.question-screen').style.display = 'none';
+            document.querySelector('.result-screen').style.display = 'block';
+        }
+
+        function restartQuiz() {
+            currentQuestionIndex = 0;
+            answers = new Array(questions.length).fill(null);
+            document.querySelector('.result-screen').style.display = 'none';
+            document.querySelector('.welcome-screen').style.display = 'block';
+            document.getElementById('finishBtn').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
